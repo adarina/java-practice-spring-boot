@@ -12,8 +12,6 @@ import java.util.Map;
 @RequestMapping("/api/v1/users")
 public class UserController {
 
-    private final Map<Long, User> users = new HashMap<>();
-    private Long userIdSequence = 0L;
     private final UserService userService;
 
     public UserController(UserService userService) {
@@ -22,22 +20,27 @@ public class UserController {
 
     @PostMapping
     public Object createUser(@RequestBody User user) {
-        if (!userService.validateUser(user)) {
-            return ResponseEntity.badRequest().body("User validation failed");
+        try {
+            User createdUser = userService.createUser(user);
+            return ResponseEntity.ok(createdUser);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
-        userIdSequence++;
-        user.setId(userIdSequence);
-        users.put(userIdSequence, user);
-        return user;
     }
 
     @GetMapping("/{id}")
-    public User getUser(@PathVariable Long id) {
-        return users.get(id);
+    public ResponseEntity<User> getUser(@PathVariable Long id) {
+        User user = userService.getUser(id);
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping
-    public Map<Long, User> getAllUsers() {
-        return users;
+    public ResponseEntity<Map<Long, User>> getAllUsers() {
+        Map<Long, User> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
 }
